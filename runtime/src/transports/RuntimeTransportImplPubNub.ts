@@ -3,12 +3,12 @@
 import PubNub from 'pubnub';
 
 import * as Logger from '../Logger';
-import type { Device, Transport } from './Transport';
+import type { Device, RuntimeTransport } from './RuntimeTransport';
 
 const PRESENCE_TIMEOUT = 600;
 const HEARTBEAT_INTERVAL = 60;
 
-export default class TransportImplPubNub implements Transport {
+export default class RuntimeTransportImplPubNub implements RuntimeTransport {
   private _currentChannel: string | null = null;
   private readonly _device: Device;
   private readonly _pubnub: PubNub;
@@ -64,5 +64,10 @@ export default class TransportImplPubNub implements Transport {
         message: { ...message, device: this._device },
       });
     }
+  }
+
+  isConnected(): boolean {
+    // We don't have a way to get current connection status from PubNub SDK, assuming it's connected.
+    return true;
   }
 }

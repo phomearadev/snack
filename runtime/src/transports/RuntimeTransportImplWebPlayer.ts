@@ -1,5 +1,5 @@
 import * as Logger from '../Logger';
-import type { Device, Transport } from './Transport';
+import type { Device, RuntimeTransport } from './RuntimeTransport';
 
 /**
  * The Snack web-player is served directly from S3. This means that anyone
@@ -47,7 +47,7 @@ function isAllowedOrigin(origin: string): boolean {
 
 type Listener = (payload: { message: any }) => void;
 
-export default class TransportImplWebPlayer implements Transport {
+export default class RuntimeTransportImplWebPlayer implements RuntimeTransport {
   private _currentChannel: string | null = null;
   private readonly _device: Device;
   private readonly _listeners: Listener[] = [];
@@ -110,6 +110,10 @@ export default class TransportImplWebPlayer implements Transport {
         this._origin
       );
     }
+  }
+
+  isConnected(): boolean {
+    return parent != null;
   }
 
   private onMessage = (event: MessageEvent) => {

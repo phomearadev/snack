@@ -3,9 +3,9 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-import type { Device, Transport } from './transports/Transport';
+import type { Device, RuntimeTransport } from './transports/RuntimeTransport';
 
-let transport: Transport | null = null;
+let transport: RuntimeTransport | null = null;
 
 // Device metadata that is sent with every message from us
 const device: Device = {
@@ -18,8 +18,8 @@ export const init = (deviceId: string) => {
   device.id = deviceId;
   const transportClass =
     Platform.OS === 'web'
-      ? require('./transports/TransportImplWebPlayer').default
-      : require('./transports/TransportImplPubNub').default;
+      ? require('./transports/RuntimeTransportImplWebPlayer').default
+      : require('./transports/RuntimeCompositedTransport').default;
   transport = new transportClass(device);
 };
 

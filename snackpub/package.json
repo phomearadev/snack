@@ -1,0 +1,25 @@
+{
+  "name": "snackpub",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "yarn domain && yarn watch",
+    "domain": "chalet start && chalet add http://localhost:3013 -n snackpub.expo -f",
+    "watch": "env-cmd -e development tsnd --inspect=9213 --quiet src/index.ts",
+    "lint": "eslint ./src",
+    "test": "jest",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "debug": "^4.3.2",
+    "socket.io": "^4.5.4"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^1.1.1"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.7",
+    "utf-8-validate": "^5.0.10"
+  }
+}
