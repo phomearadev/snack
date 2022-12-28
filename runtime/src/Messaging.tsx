@@ -14,12 +14,16 @@ const device: Device = {
   platform: Platform.OS,
 };
 
-export const init = (deviceId: string) => {
+export const init = (deviceId: string, testTransport: string | null | undefined) => {
   device.id = deviceId;
-  const transportClass =
-    Platform.OS === 'web'
-      ? require('./transports/RuntimeTransportImplWebPlayer').default
-      : require('./transports/RuntimeCompositedTransport').default;
+  let transportClass;
+  if (Platform.OS === 'web') {
+    transportClass = require('./transports/RuntimeTransportImplWebPlayer').default;
+  } else if (testTransport === 'snackpub') {
+    transportClass = require('./transports/RuntimeCompositedTransport').default;
+  } else {
+    transportClass = require('./transports/RuntimeTransportImplPubNub').default;
+  }
   transport = new transportClass(device);
 };
 
