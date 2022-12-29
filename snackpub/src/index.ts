@@ -1,5 +1,7 @@
 import { Server } from 'socket.io';
 
+import Env from './Env';
+import { maybeBindRedisAdapterAsync, maybeCloseRedisConnectionsAsync } from './RedisAdapter';
 import type {
   ClientToServerEvents,
   InterServerEvents,
@@ -11,11 +13,12 @@ import type {
 const debug = require('debug')('snackpub');
 
 function registerShutdownHandlers(server: Server) {
-  const shutdown = (signal: ShutdownSignal) => {
+  const shutdown = async (signal: ShutdownSignal) => {
     console.log(
       `Received ${signal}; the HTTP server is shutting down and draining existing connections`
     );
-    server.close();
+    await closeServerAsync(server);
+    await maybeCloseRedisConnectionsAsync();
   };
 
   // TODO: In Node 9, the signal is passed as the first argument to the listener
@@ -26,10 +29,23 @@ function registerShutdownHandlers(server: Server) {
   process.once('SIGUSR2', () => shutdown('SIGUSR2'));
 }
 
+function closeServerAsync(server: Server): Promise<void> {
+  return new Promise((resolve) => {
+    server.close((error) => {
+      if (error) {
+        console.log('Failed to close server', error);
+      }
+      resolve();
+    });
+  });
+}
+
 async function runAsync() {
   const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>({
     serveClient: false,
   });
+
+  await maybeBindRedisAdapterAsync(io);
 
   io.on('connection', (socket) => {
     debug('onconnect', socket.handshake.address);
@@ -82,7 +98,7 @@ async function runAsync() {
   });
 
   registerShutdownHandlers(io);
-  io.listen(3013);
+  io.listen(Env.port);
 }
 
 (async () => {
