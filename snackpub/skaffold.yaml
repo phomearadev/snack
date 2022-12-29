@@ -1,8 +1,9 @@
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: snackpub
 build:
+  platforms: ['linux/amd64']
   artifacts:
     - image: gcr.io/exponentjs/snackpub
       sync:
@@ -21,6 +22,7 @@ build:
 profiles:
   - name: prod
     build:
+      platforms: ['linux/amd64']
       artifacts:
         - image: gcr.io/exponentjs/snackpub
           docker:
