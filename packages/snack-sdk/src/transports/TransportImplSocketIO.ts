@@ -3,8 +3,7 @@ import type { Socket } from 'socket.io-client';
 
 import { ProtocolOutgoingMessage, ProtocolIncomingMessage, ProtocolCodeMessage } from './Protocol';
 import TransportImplBase from './TransportImplBase';
-
-const SNACKPUB_URL = 'http://snackpub.expo.test:3013';
+import type { SnackTransportOptions } from './types';
 
 interface ServerToClientEvents {
   message: (data: { channel: string; message: ProtocolIncomingMessage; sender: string }) => void;
@@ -19,12 +18,22 @@ interface ClientToServerEvents {
 }
 
 export default class TransportImplSocketIO extends TransportImplBase {
+  private readonly _snackPubURL: string;
   private _socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+
+  constructor(options: SnackTransportOptions) {
+    super(options);
+    const { snackPubURL } = options;
+    if (!snackPubURL) {
+      throw new Error('The `snackPubURL` option is unspecified.');
+    }
+    this._snackPubURL = snackPubURL;
+  }
 
   protected start(): void {
     this.stop();
 
-    this._socket = io(SNACKPUB_URL, { transports: ['websocket'] });
+    this._socket = io(this._snackPubURL, { transports: ['websocket'] });
 
     this._socket.on('connect', () => {
       this._socket?.emit('subscribeChannel', { channel: this.channel, sender: this._socket?.id });
