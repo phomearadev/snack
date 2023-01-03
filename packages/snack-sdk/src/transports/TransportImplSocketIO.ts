@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
 
+import ConnectionMetricsEmitter from './ConnectionMetricsEmitter';
 import { ProtocolOutgoingMessage, ProtocolIncomingMessage, ProtocolCodeMessage } from './Protocol';
 import TransportImplBase from './TransportImplBase';
 import type { SnackTransportOptions } from './types';
@@ -20,6 +21,8 @@ interface ClientToServerEvents {
 export default class TransportImplSocketIO extends TransportImplBase {
   private readonly _snackpubURL: string;
   private _socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+  private _startTime: number | undefined;
+  private _connectionAttempts: number;
 
   constructor(options: SnackTransportOptions) {
     super(options);
@@ -28,16 +31,34 @@ export default class TransportImplSocketIO extends TransportImplBase {
       throw new Error('The `snackpubURL` option is unspecified.');
     }
     this._snackpubURL = snackpubURL;
+    this._connectionAttempts = 0;
   }
 
   protected start(): void {
     this.stop();
+    this._startTime = Date.now();
 
     this._socket = io(this._snackpubURL, { transports: ['websocket'] });
 
     this._socket.on('connect', () => {
       this._socket?.emit('subscribeChannel', { channel: this.channel, sender: this._socket?.id });
+      if (this._startTime) {
+        ConnectionMetricsEmitter.emitSuccessed({
+          timeMs: Date.now() - this._startTime,
+          attempts: this._connectionAttempts,
+        });
+      }
     });
+    this._socket.io.on('reconnect_attempt', (attempts: number) => {
+      this._connectionAttempts = attempts;
+      if (this._startTime) {
+        ConnectionMetricsEmitter.emitFailed({
+          timeMs: Date.now() - this._startTime,
+          attempts,
+        });
+      }
+    });
+
     this._socket.on('message', this.onMessage);
     this._socket.on('joinChannel', this.onJoinChannel);
     this._socket.on('leaveChannel', this.onLeaveChannel);
@@ -51,6 +72,7 @@ export default class TransportImplSocketIO extends TransportImplBase {
       this._socket.close();
       this._socket = null;
     }
+    this._startTime = undefined;
   }
 
   protected isStarted(): boolean {
